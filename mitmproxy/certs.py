@@ -80,7 +80,7 @@ def create_ca(organization, cn, exp, key_size):
     return key, cert
 
 
-def dummy_cert(privkey, cacert, commonname, sans, organization):
+def dummy_cert(privkey, cacert, commonname, sans, organization, serialnumber):
     """
         Generates a dummy certificate.
 
@@ -89,6 +89,7 @@ def dummy_cert(privkey, cacert, commonname, sans, organization):
         commonname: Common name for the generated certificate.
         sans: A list of Subject Alternate Names.
         organization: Organization name for the generated certificate.
+        serialnumber: Serial number for ther generated certificate.
 
         Returns cert if operation succeeded, None if not.
     """
@@ -113,7 +114,10 @@ def dummy_cert(privkey, cacert, commonname, sans, organization):
         cert.get_subject().CN = commonname
     if organization is not None:
         cert.get_subject().O = organization
-    cert.set_serial_number(int(time.time() * 10000))
+    if serialnumber:
+        cert.set_serial_number(serialnumber)
+    else:
+        cert.set_serial_number(int(time.time() * 10000))
     if ss:
         cert.set_version(2)
         cert.add_extensions(
@@ -328,7 +332,8 @@ class CertStore:
             self,
             commonname: typing.Optional[bytes],
             sans: typing.List[bytes],
-            organization: typing.Optional[bytes] = None
+            organization: typing.Optional[bytes] = None,
+            serialnumber: typing.Optional[int] = None
     ) -> typing.Tuple["Cert", OpenSSL.SSL.PKey, str]:
         """
             Returns an (cert, privkey, cert_chain) tuple.
@@ -339,6 +344,8 @@ class CertStore:
             sans: A list of Subject Alternate Names.
 
             organization: Organization name for the generated certificate.
+
+            serialnumber: Serial number for the generated certificate.
         """
 
         potential_keys: typing.List[TCertId] = []
@@ -362,7 +369,8 @@ class CertStore:
                     self.default_ca,
                     commonname,
                     sans,
-                    organization),
+                    organization,
+                    serialnumber),
                 privatekey=self.default_privatekey,
                 chain_file=self.default_chain_file)
             self.certs[(commonname, tuple(sans))] = entry

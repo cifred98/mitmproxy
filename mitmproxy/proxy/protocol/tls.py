@@ -468,12 +468,13 @@ class TlsLayer(base.Layer):
 
     def _find_cert(self):
         """
-        This function determines the Common Name (CN), Subject Alternative Names (SANs) and Organization Name
-        our certificate should have and then fetches a matching cert from the certstore.
+        This function determines the Common Name (CN), Subject Alternative Names (SANs), Organization Name
+        and Serial number our certificate should have and then fetches a matching cert from the certstore.
         """
         host = None
         sans = set()
         organization = None
+        serialnumber = None
 
         # In normal operation, the server address should always be known at this point.
         # However, we may just want to establish TLS so that we can send an error message to the client,
@@ -495,6 +496,8 @@ class TlsLayer(base.Layer):
                 host = upstream_cert.cn.decode("utf8").encode("idna")
             if upstream_cert.organization:
                 organization = upstream_cert.organization
+            if upstream_cert.serial:
+                serialnumber = upstream_cert.serial
         # Also add SNI values.
         if self._client_hello.sni:
             sans.add(self._client_hello.sni)
@@ -505,4 +508,4 @@ class TlsLayer(base.Layer):
         # In other words, the Common Name is irrelevant then.
         if host:
             sans.add(host)
-        return self.config.certstore.get_cert(host, list(sans), organization)
+        return self.config.certstore.get_cert(host, list(sans), organization, serialnumber)
